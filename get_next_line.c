@@ -1,4 +1,5 @@
 #include "get_next_line.h"
+#include <stdlib.h>
 size_t	ft_strlen(const char *s)
 {
 	size_t	i;
@@ -61,12 +62,41 @@ char	*ft_strchr(const char *s, int c)
 		return ((char *)&s[i]);
 	return (NULL);
 }
+char *new_remainder(char *remainder)
+{
+	char *rem;
+	rem = ft_strrchr(remainder);
 
+
+
+
+	return(rem);
+
+}
+
+char *find_first_newline(char *remainder)
+{
+	char *line;
+	char *newline;
+	int len= 0;
+	
+	
+	if(!remainder)
+		return(NULL);
+	newline = ft_strchr(remainder, '\n');
+	if(!newline)
+		return(ft_strlen(remainder));
+	len = (newline - remainder) + 1;
+	line = ft_substr(remainder, 0, len);
+	return(line);
+
+}
 char *get_next_line(int fd)
 {
     static char *remainder;
     char *buffer;
     int b_read;
+	char *line;
 
     if(fd < 0 || BUFFER_SIZE <= 0)
         return(NULL);
@@ -83,7 +113,9 @@ char *get_next_line(int fd)
             buffer[b_read] = '\0';
         remainder = ft_strjoin(remainder, buffer);
     }
-return(remainder);
+	
+	line = find_first_newline(remainder);
+	remainder = new_remainder(remainder);
+	return(line);
 
-
-}
+} 
