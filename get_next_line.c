@@ -14,24 +14,7 @@ size_t	ft_strlen(const char *s)
 	}
 	return (i);
 }
-void	*ft_memcpy(void *dest, const void *src, size_t n)
-{
-	size_t				i;
-	unsigned char		*d;
-	const unsigned char	*s;
 
-	s = (const unsigned char *)src;
-	if (!dest && !src)
-		return (NULL);
-	i = 0;
-	d = (unsigned char *)dest;
-	while (i < n)
-	{
-		d[i] = s[i];
-		i++;
-	}
-	return (dest);
-}
 char	*ft_substr(char const *s, unsigned int start, size_t len)
 {
 	size_t	i;
@@ -61,19 +44,27 @@ char	*ft_substr(char const *s, unsigned int start, size_t len)
 char	*ft_strjoin(char const *s1, char const *s2)
 {
 	char	*str;
-	size_t	len_s1;
-	size_t	len_s2;
+	size_t	i;
+	size_t	j;
 
 	if (!s1 || !s2)
 		return (NULL);
-	len_s1 = ft_strlen(s1);
-	len_s2 = ft_strlen(s2);
-	str = (char *)malloc(sizeof(char) * (len_s1 + len_s2 + 1));
+	str = (char *)malloc(sizeof(char) * (ft_strlen(s1) + ft_strlen(s2) + 1));
 	if (!str)
 		return (NULL);
-	ft_memcpy(str, s1, len_s1);
-	ft_memcpy(str + len_s1, s2, len_s2);
-	str[len_s1 + len_s2] = '\0';
+	i = 0;
+	while (s1[i])
+	{
+		str[i] = s1[i];
+		i++;
+	}
+	j = 0;
+	while (s2[j])
+	{
+		str[i + j] = s2[j];
+		j++;
+	}
+	str[i + j] = '\0';
 	return (str);
 }
 char	*ft_strchr(const char *s, int c)
@@ -110,7 +101,7 @@ char	*ft_strdup(const char *s)
 	dest[i] = '\0';
 	return (dest);
 }
-char *new_remainder(char *remainder)
+char *ft_new_remainder(char *remainder)
 {
 	int i = 0;
 	int j = 0;
@@ -118,7 +109,10 @@ char *new_remainder(char *remainder)
 	while(remainder[i] && remainder[i] != '\n')
 		i++;
 	if(!remainder[i])
+	{
+		free(remainder);
 		return(NULL);
+	}
 	i++;
 	while(remainder[i])
 	{
@@ -127,11 +121,11 @@ char *new_remainder(char *remainder)
 		j++;
 	}
 	remainder[j] = '\0';
-	printf("%s\n", remainder);
+	//printf("%s\n", remainder);
 	return(remainder);
 }
 
-char *find_first_newline(char *remainder)
+char *ft_find_first_newline(char *remainder)
 {
 	char *line;
 	char *newline;
@@ -149,43 +143,70 @@ char *find_first_newline(char *remainder)
 	return(line);
 
 }
+char	*ft_free_and_join(char *rem, char *buf)
+{
+	char	*temp;
+
+	temp = ft_strjoin(rem, buf);
+	free(rem); // Eski remainder'ı burada siliyoruz
+	return (temp);
+}
+char	*ft_extract_and_save(char **rem)
+{
+	char	*line;
+	char	*temp;
+
+	if (!*rem || **rem == '\0')
+	{
+		free(*rem);
+		*rem = NULL;
+		return (NULL);
+	}
+	line = ft_find_first_newline(*rem);
+	temp = ft_new_remainder(*rem);
+	*rem = temp;
+	return (line);
+}
+
 char *get_next_line(int fd)
 {
     static char *remainder;
     char *buffer;
-    int b_read;
+    int b_read = 1;
 	char *line;
 
     if(fd < 0 || BUFFER_SIZE <= 0)
         return(NULL);
-	remainder = ft_strdup("");
+	if(!remainder)
+		remainder = ft_strdup("");
     buffer = malloc(BUFFER_SIZE + 1);
-    while(!(ft_strchr(remainder, '\n')) && BUFFER_SIZE > 0)
+    while(!(ft_strchr(remainder, '\n')) && b_read != 0)
     {
         b_read = read (fd, buffer, BUFFER_SIZE);
         if(b_read < 0)
         {
             free(buffer);
+			free(remainder);
+			remainder = NULL;
             return(NULL);
         }
-        else
-            buffer[b_read] = '\0';
-        remainder = ft_strjoin(remainder, buffer);
+        buffer[b_read] = '\0';
+        remainder = ft_free_and_join(remainder, buffer);
     }
-	//printf("%s", remainder);
-	line = find_first_newline(remainder);
-	//printf("%s\n", line);
-	remainder = new_remainder(remainder);
-	//printf("%s\n", remainder);
 	free(buffer);
-	return(line);
-
+	return (ft_extract_and_save(&remainder));
 } 
 int main()
 {
-	int fd = open("deneme.txt", O_RDONLY, 0777);
-	//get_next_line(fd);
-	 printf("%s\n", get_next_line(fd));
-	 printf("%s\n", get_next_line(fd));
-	 //printf("%s\n", get_next_line(fd));
+    int     fd;
+    char    *line;
+
+    fd = open("deneme.txt", O_RDONLY);
+    while ((line = get_next_line(fd)) != NULL)
+    {
+        printf("%s", line);
+        free(line);
+    }
+    close(fd);
+    return (0);
 }
